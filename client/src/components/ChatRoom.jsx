@@ -1,0 +1,126 @@
+import { useEffect, useState, useRef } from 'react';
+import './styles.css';
+import { useParams } from 'react-router-dom';
+
+export default function ChatRoom() {
+  const username = localStorage.getItem('username');
+  const [messages, setMessages] = useState([]);
+  const [roomName, setRoomName] = useState('');
+
+  const [text, setText] = useState('');
+  const ws = useRef(null);
+  const messagesEndRef = useRef(null);
+  const { roomId } = useParams();
+
+  useEffect(() => {
+    ws.current = new WebSocket('ws://localhost:5000');
+
+    ws.current.onopen = () => {
+      console.log('Connected to WebSocket server');
+
+      ws.current.send(JSON.stringify({ type: 'SET_USERNAME', username }));
+
+      ws.current.send(JSON.stringify({ type: 'JOIN_ROOM', roomId }));
+    };
+
+    ws.current.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      console.log('Message from server:', data);
+
+      switch (data.type) {
+        case 'WELCOME':
+        case 'INFO':
+          setMessages((prev) => [
+            ...prev,
+            {
+              author: 'System',
+              text: data.message,
+              time: new Date().toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              }),
+            },
+          ]);
+          break;
+
+        case 'ROOM_HISTORY':
+          setMessages(data.messages);
+          setRoomName(data.room);
+
+          break;
+
+        case 'NEW_MESSAGE':
+          setMessages((prev) => [...prev, data.message]);
+          break;
+
+        default:
+          console.warn('Unknown message type:', data.type);
+      }
+    };
+
+    ws.current.onclose = () => {
+      console.log('Disconnected from WebSocket server');
+    };
+
+    return () => {
+      if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+        ws.current.close();
+      }
+    };
+  }, [username]);
+
+  useEffect(() => {
+    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+      ws.current.send(
+        JSON.stringify({ type: 'JOIN_ROOM', roomId: Number(roomId) }),
+      );
+    }
+  }, [roomId]);
+
+  const handleSend = () => {
+    if (!text.trim() || !ws.current || ws.current.readyState !== WebSocket.OPEN)
+      return;
+
+    ws.current.send(JSON.stringify({ type: 'SEND_MESSAGE', text }));
+    setText('');
+  };
+
+  const handleKeyPress = (e) => {
+    if (e.key === 'Enter') handleSend();
+  };
+
+  return (
+    <div className="chat-container">
+      <header className="chat-header">
+        <h2>{`${roomName} Chat`}</h2>
+        <span className="chat-room-name">{username}</span>
+      </header>
+
+      <div className="chat-messages">
+        {messages.map((msg, i) => (
+          <div key={i} className={`message`}>
+            <span className="message-author">
+              {username === msg.author ? 'Me' : msg.author}
+            </span>
+            <div className="message-text">{msg.text}</div>
+            <span className="message-time">{msg.time}</span>
+          </div>
+        ))}
+        <div ref={messagesEndRef} />
+      </div>
+
+      <div className="chat-input">
+        <input
+          type="text"
+          placeholder="Type a message..."
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={handleKeyPress}
+        />
+        <button onClick={handleSend} disabled={!text.trim()}>
+          Send
+        </button>
+      </div>
+    </div>
+  );
+}
