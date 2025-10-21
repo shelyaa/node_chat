@@ -15,9 +15,7 @@ app.use(express.json());
 app.use('/', roomRouter);
 app.use('/', userRouter);
 
-const server = app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
+const server = app.listen(PORT, () => {});
 
 const wss = new WebSocketServer({ server });
 

@@ -21,10 +21,21 @@ export default function App() {
   );
 
   useEffect(() => {
-    if (username) {
-      localStorage.setItem('username', username);
+    const saveUser = async () => {
+      const trimmed = username.trim();
+      if (!trimmed) return;
 
-      createUser(username);
+      localStorage.setItem('username', trimmed);
+
+      try {
+        await createUser(trimmed);
+      } catch (err) {
+        return err;
+      }
+    };
+
+    if (username) {
+      saveUser();
     }
   }, [username]);
 
@@ -38,7 +49,7 @@ export default function App() {
           />
           <Route path="/login" element={<Login setUsername={setUsername} />} />
           <Route path="/rooms" element={<Rooms />} />
-          <Route path="/rooms/:roomId" element={<ChatRoom />} />
+          <Route path="/rooms/:roomId" element={<ChatRoom username={username} />} />
         </Routes>
       </Router>
     </QueryClientProvider>

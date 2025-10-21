@@ -2,11 +2,9 @@ import { useEffect, useState, useRef } from 'react';
 import './styles.css';
 import { useNavigate, useParams } from 'react-router-dom';
 
-export default function ChatRoom() {
-  const username = localStorage.getItem('username');
+export default function ChatRoom({ username }) {
   const [messages, setMessages] = useState([]);
   const [roomName, setRoomName] = useState('');
-
   const [text, setText] = useState('');
   const ws = useRef(null);
   const messagesEndRef = useRef(null);
@@ -14,19 +12,24 @@ export default function ChatRoom() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    if (!username?.trim()) {
+      navigate('/login');
+    }
+  }, [username, navigate]);
+
+  useEffect(() => {
     ws.current = new WebSocket('ws://localhost:5000');
 
     ws.current.onopen = () => {
-      console.log('Connected to WebSocket server');
-
-      if (!username) {
-        navigate('/login');
-        return;
+      if (username?.trim()) {
+        ws.current.send(
+          JSON.stringify({ type: 'SET_USERNAME', username: username.trim() })
+        );
       }
 
-      ws.current.send(JSON.stringify({ type: 'SET_USERNAME', username }));
-
-      ws.current.send(JSON.stringify({ type: 'JOIN_ROOM', roomId }));
+      if (roomId) {
+        ws.current.send(JSON.stringify({ type: 'JOIN_ROOM', roomId }));
+      }
     };
 
     ws.current.onmessage = (event) => {
@@ -34,8 +37,7 @@ export default function ChatRoom() {
       try {
         data = JSON.parse(event.data);
       } catch (e) {
-        console.warn('Malformed message from server:', event.data);
-        return;
+        return e;
       }
 
       switch (data.type) {
@@ -57,7 +59,6 @@ export default function ChatRoom() {
         case 'ROOM_HISTORY':
           setMessages(data.messages);
           setRoomName(data.room);
-
           break;
 
         case 'NEW_MESSAGE':
@@ -78,15 +79,13 @@ export default function ChatRoom() {
         ws.current.close();
       }
     };
-  }, [username]);
+  }, []);
 
-  // useEffect(() => {
-  //   if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-  //     ws.current.send(
-  //       JSON.stringify({ type: 'JOIN_ROOM', roomId: Number(roomId) }),
-  //     );
-  //   }
-  // }, [roomId]);
+  useEffect(() => {
+    if (ws.current && ws.current.readyState === WebSocket.OPEN && roomId) {
+      ws.current.send(JSON.stringify({ type: 'JOIN_ROOM', roomId }));
+    }
+  }, [roomId]);
 
   const handleSend = () => {
     if (!text.trim() || !ws.current || ws.current.readyState !== WebSocket.OPEN)
@@ -109,7 +108,7 @@ export default function ChatRoom() {
 
       <div className="chat-messages">
         {messages.map((msg, i) => (
-          <div key={i} className={`message`}>
+          <div key={i} className="message">
             <span className="message-author">
               {username === msg.author ? 'Me' : msg.author}
             </span>
