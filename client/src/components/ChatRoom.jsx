@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import './styles.css';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 export default function ChatRoom() {
   const username = localStorage.getItem('username');
@@ -11,6 +11,7 @@ export default function ChatRoom() {
   const ws = useRef(null);
   const messagesEndRef = useRef(null);
   const { roomId } = useParams();
+  const navigate = useNavigate();
 
   useEffect(() => {
     ws.current = new WebSocket('ws://localhost:5000');
@@ -18,14 +19,24 @@ export default function ChatRoom() {
     ws.current.onopen = () => {
       console.log('Connected to WebSocket server');
 
+      if (!username) {
+        navigate('/login');
+        return;
+      }
+
       ws.current.send(JSON.stringify({ type: 'SET_USERNAME', username }));
 
       ws.current.send(JSON.stringify({ type: 'JOIN_ROOM', roomId }));
     };
 
     ws.current.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      console.log('Message from server:', data);
+      let data;
+      try {
+        data = JSON.parse(event.data);
+      } catch (e) {
+        console.warn('Malformed message from server:', event.data);
+        return;
+      }
 
       switch (data.type) {
         case 'WELCOME':
@@ -69,13 +80,13 @@ export default function ChatRoom() {
     };
   }, [username]);
 
-  useEffect(() => {
-    if (ws.current && ws.current.readyState === WebSocket.OPEN) {
-      ws.current.send(
-        JSON.stringify({ type: 'JOIN_ROOM', roomId: Number(roomId) }),
-      );
-    }
-  }, [roomId]);
+  // useEffect(() => {
+  //   if (ws.current && ws.current.readyState === WebSocket.OPEN) {
+  //     ws.current.send(
+  //       JSON.stringify({ type: 'JOIN_ROOM', roomId: Number(roomId) }),
+  //     );
+  //   }
+  // }, [roomId]);
 
   const handleSend = () => {
     if (!text.trim() || !ws.current || ws.current.readyState !== WebSocket.OPEN)
@@ -92,7 +103,7 @@ export default function ChatRoom() {
   return (
     <div className="chat-container">
       <header className="chat-header">
-        <h2>{`${roomName} Chat`}</h2>
+        <h2>{roomName ? `${roomName} Chat` : 'Chat'}</h2>
         <span className="chat-room-name">{username}</span>
       </header>
 

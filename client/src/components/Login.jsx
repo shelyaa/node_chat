@@ -1,16 +1,16 @@
 'use client';
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './styles.css';
+import { useState } from 'react';
 
-
-export default function Login() {
-  const [username, setUsername] = useState('');
+export default function Login({ setUsername }) {
   const navigate = useNavigate();
+  const [inputValue, setInputValue] = useState('');
 
   const handleJoinChat = () => {
-    if (!username.trim()) return;
-    localStorage.setItem('username', username.trim());
+    const trimmed = inputValue.trim();
+    if (!trimmed) return;
+    setUsername(trimmed); 
     navigate('/rooms');
   };
 
@@ -32,15 +32,15 @@ export default function Login() {
             className="login-input"
             type="text"
             placeholder="Your name"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
             onKeyUp={handleKeyPress}
             autoFocus
           />
           <button
             className="login-button"
             onClick={handleJoinChat}
-            disabled={!username.trim()}
+            disabled={!inputValue.trim()}
           >
             Join Chat
           </button>

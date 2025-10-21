@@ -1,13 +1,13 @@
 import { rooms, users } from '../data/chatData.js';
 
 const createUser = (req, res) => {
-  const { name } = req.body;
+  const { username } = req.body;
 
-  if (!name) {
+  if (!username) {
     return res.status(400).json({ error: 'Name is required' });
   }
 
-  const exists = rooms.find((r) => r.name === name);
+  const exists = users.find((r) => r.username === username);
 
   if (exists) {
     return res.status(400).json({ error: 'User already exists' });
@@ -15,7 +15,7 @@ const createUser = (req, res) => {
 
   const user = {
     id: Date.now(),
-    username: name,
+    username,
     roomId: null,
   };
 
@@ -25,7 +25,7 @@ const createUser = (req, res) => {
 
 const joinUser = (req, res) => {
   const userId = Number(req.params.id);
-  const roomId = Number(req.body.roomId); 
+  const roomId = Number(req.body.roomId);
 
   const user = users.find((u) => u.id === userId);
   const room = rooms.find((r) => r.id === roomId);
@@ -41,7 +41,7 @@ const joinUser = (req, res) => {
   user.roomId = roomId;
 
   res.json({
-    message: `${user.name} joined ${room.name}`,
+    message: `${user.username} joined ${room.name}`,
     user,
   });
 };

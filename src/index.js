@@ -3,7 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import { WebSocketServer } from 'ws';
 import { roomRouter } from './routes/room.route.js';
-// import { userRouter } from './routes/user.route.js';
+import { userRouter } from './routes/user.route.js';
 import { handleMessage } from './controllers/chat.controller.js';
 
 const app = express();
@@ -13,7 +13,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use('/', roomRouter);
-// app.use('/', userRouter);
+app.use('/', userRouter);
 
 const server = app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);

@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = ' http://localhost:5000';
+const BASE_URL = 'http://localhost:5000';
 
 export async function fetchRooms() {
   try {
@@ -32,7 +32,7 @@ export async function updateRoom(id, name) {
 export async function deleteRoom(id) {
   try {
     await axios.delete(`${BASE_URL}/rooms/${id}`);
-    return true;
+    return id;
   } catch (err) {
     console.error('Error fetching rooms:', err);
   }

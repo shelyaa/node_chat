@@ -9,11 +9,24 @@ import Login from './components/Login';
 import ChatRoom from './components/ChatRoom';
 import Rooms from './components/Rooms';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useEffect } from 'react';
+import { createUser } from './api/users';
 
 const queryClient = new QueryClient();
 
 export default function App() {
-  const username = localStorage.getItem('username');
+  const [username, setUsername] = useState(
+    () => localStorage.getItem('username') || '',
+  );
+
+  useEffect(() => {
+    if (username) {
+      localStorage.setItem('username', username);
+
+      createUser(username);
+    }
+  }, [username]);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -23,7 +36,7 @@ export default function App() {
             path="/"
             element={<Navigate to={username ? '/rooms' : '/login'} />}
           />
-          <Route path="/login" element={<Login />} />
+          <Route path="/login" element={<Login setUsername={setUsername} />} />
           <Route path="/rooms" element={<Rooms />} />
           <Route path="/rooms/:roomId" element={<ChatRoom />} />
         </Routes>
